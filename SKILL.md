@@ -50,7 +50,7 @@ Make API calls using `curl` via Bash, reading credentials from `dots.json`.
 
 ### 4. Confirm
 
-After mutations, fetch the graph snapshot or the specific node/edge to confirm the result. Show a brief summary including affected IDs and the active space.
+After mutations, fetch the graph snapshot or the specific node to confirm the result. There is no public `GET /edges/:edge_id` route, so confirm edge writes via the graph snapshot. Show a brief summary including affected IDs and the active space.
 
 ## Rules
 
@@ -146,10 +146,14 @@ Response: `{ nodes, edges, cursor? }`
 | `shortest_path` | `{ from_node_id, to_node_id, max_depth: 1-6 }` | view | Shortest path |
 | `subgraph_extract` | `{ root_node_ids: [] (1-20), depth: 1-3 }` | view | Subgraph extraction |
 | `degree_summary` | `{ node_ids?: [] (1-100), kind? }` | view | Degree analysis |
-| `bulk_node_upsert` | `{ nodes: [] (1-100) }` | update | Bulk node creation |
-| `bulk_edge_upsert` | `{ edges: [] (1-200) }` | update | Bulk edge creation |
+| `bulk_node_upsert` | `{ nodes: [{ kind, title, props? }, ...] }` (1-100) | update | Bulk node creation |
+| `bulk_edge_upsert` | `{ edges: [{ kind, from_node_id, to_node_id, props? }, ...] }` (1-200) | update | Bulk edge creation |
 
 Response: `{ template_id, scope, graph?, stats? }`
+
+Notes:
+- Bulk write template payloads are wrapped in `params`.
+- Do not send server-owned fields like `space_id`, `created_by`, `created_at`, `updated_at`, `node_id`, or `edge_id` in bulk template input. The server fills those from the active route and authenticated actor.
 
 ### Shared View
 
@@ -189,12 +193,12 @@ Response: `{ template_id, scope, graph?, stats? }`
 
 ```typescript
 type GNode = {
-  node_id: string; kind: string; title: string; created_by: string
+  node_id: string; space_id: string; kind: string; title: string; created_by: string
   props: Record<string, GraphValue>; created_at: string; updated_at: string
 }
 
 type GEdge = {
-  edge_id: string; kind: string; from_node_id: string; to_node_id: string
+  edge_id: string; space_id: string; kind: string; from_node_id: string; to_node_id: string
   created_by: string; props: Record<string, GraphValue>; created_at: string; updated_at: string
 }
 
@@ -244,7 +248,9 @@ type GraphValue = string | number | boolean | null | Array<string | number | boo
 | `VIEW_EVENT_DENIED` | Unknown view event type |
 | `SPACE_NOT_READY` | Space is still provisioning |
 
-Error response shape: `{ request_id, code, message, status }`
+Error response body: `{ request_id, code, message }`
+
+HTTP status code is carried by the response itself, not duplicated in the JSON body.
 
 ## Lessons Learned
 
