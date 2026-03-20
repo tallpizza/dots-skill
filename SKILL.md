@@ -13,7 +13,9 @@ Use this skill when the user wants to read or mutate graph data through the Dots
 
 Check for `dots.json` in CWD.
 
-**If missing** — ask the user for API key (`sk_...` format) and base URL (default `http://localhost:8400`). Then discover available targets:
+Default base URL is `https://dots.tallpizza.com`.
+
+**If missing** — ask the user for API key (`sk_...` format). Only ask for a base URL if the user explicitly wants to use a different server. Then discover available targets:
 
 ```bash
 # List workspaces accessible with this key
@@ -23,7 +25,19 @@ curl -s -H "Authorization: Bearer $API_KEY" "$BASE_URL/api/workspaces"
 curl -s -H "Authorization: Bearer $API_KEY" "$BASE_URL/api/workspaces/$WS_SLUG/spaces"
 ```
 
-Present the available workspaces and spaces. Let the user pick one (or match the one mentioned in their prompt). Then write `dots.json`:
+Present the available workspaces and spaces. Let the user pick one (or match the one mentioned in their prompt). Then write `dots.json`.
+
+If the user did not explicitly override the base URL, omit `base_url` and rely on the default:
+
+```json
+{
+  "workspace_slug": "acme",
+  "space_slug": "demo",
+  "api_key": "sk_..."
+}
+```
+
+If the user explicitly chose a different server, include it:
 
 ```json
 {
@@ -36,17 +50,19 @@ Present the available workspaces and spaces. Let the user pick one (or match the
 
 Add `dots.json` to `.gitignore` if not already present (contains API key).
 
-**If exists** — read it and use the stored values.
+**If exists** — read it and use the stored values. If `base_url` is missing, use `https://dots.tallpizza.com`.
 
 ### 2. Target resolution
 
 - Default workspace/space come from `dots.json`.
+- Default base URL is `https://dots.tallpizza.com` unless `dots.json` explicitly overrides it.
 - If the user names a different space in their prompt (e.g., "demo 스페이스에 넣어줘"), use that slug for the request. Update `dots.json` with the new space so it becomes the default for next time.
+- If the user explicitly names a different base URL, use it and persist it to `dots.json`.
 - If the user names an ambiguous or unknown space, fetch the list via `GET /api/workspaces/:ws/spaces` to resolve and confirm.
 
 ### 3. Execute
 
-Make API calls using `curl` via Bash, reading credentials from `dots.json`.
+Make API calls using `curl` via Bash. Read credentials from `dots.json`, and use `https://dots.tallpizza.com` as the base URL unless `dots.json` explicitly provides `base_url`.
 
 ### 4. Confirm
 
@@ -55,6 +71,8 @@ After mutations, fetch the graph snapshot or the specific node to confirm the re
 ## Rules
 
 - Credentials come from `dots.json` in CWD.
+- Use `https://dots.tallpizza.com` as the default base URL.
+- Only persist `base_url` to `dots.json` when the user explicitly selected a non-default server.
 - Auth: `Authorization: Bearer sk_{public_id}_{secret}` on every request.
 - Never invent endpoints outside this spec.
 - Do not expose a live API key unless the user explicitly asks.
@@ -256,4 +274,4 @@ HTTP status code is carried by the response itself, not duplicated in the JSON b
 
 ### Routes use slugs, not IDs
 
-All public routes use `workspace_slug` + `space_slug` from `dots.json`, not internal IDs. Call `/api/workspaces/{workspace_slug}/spaces/{space_slug}/...` for all graph, query, template, and view requests.
+All public routes use `workspace_slug` + `space_slug` from `dots.json`, not internal IDs. Use `https://dots.tallpizza.com` by default, unless `dots.json` explicitly overrides `base_url`. Call `/api/workspaces/{workspace_slug}/spaces/{space_slug}/...` for all graph, query, template, and view requests.
