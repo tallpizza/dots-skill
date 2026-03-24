@@ -117,6 +117,39 @@ Base path: `/api/workspaces/:workspace_slug/spaces/:space_slug` (abbreviated `�
 | PATCH | `…/:sp/nodes/:node_id` | `{ kind?, title?, props? }` | update | `GNode` |
 | DELETE | `…/:sp/nodes/:node_id` | — | update | 204 (deletes incident edges) |
 
+#### Related words
+
+`POST …/:sp/nodes/:node_id/related-words`
+
+Uses the same API key auth as other space endpoints: `Authorization: Bearer sk_...`. The server calls Grok to generate related words.
+
+Body:
+
+```json
+{
+  "count": 10,
+  "create_nodes": false
+}
+```
+
+- `count` is optional
+- `create_nodes=false` requires `view`
+- `create_nodes=true` requires `update`
+
+Response:
+
+```json
+{
+  "created": false,
+  "items": [{ "title": "Graph database", "spark": "Related concept" }],
+  "nodes": [],
+  "edges": []
+}
+```
+
+- Preview mode (`create_nodes=false`) returns `created: false` with `items`, and empty `nodes` / `edges`
+- Create mode (`create_nodes=true`) returns `created: true` with the created `GNode[]` and `GEdge[]`
+
 ### Edges
 
 | Method | Path | Body | Scope | Response |
