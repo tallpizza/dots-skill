@@ -1,8 +1,6 @@
 {
-  "base_url": "http://macmini:8400",
   "workspace_slug": "example-workspace",
   "space_slug": "example-space",
   "space_name": "Example Space",
-  "api_key": "sk_replace_me",
-  "scope": "view"
+  "api_key": "sk_replace_me"
 }
